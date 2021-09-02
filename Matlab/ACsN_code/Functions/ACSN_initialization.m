@@ -23,7 +23,7 @@ Video = default{7};
 Window = default{8};
 alpha = default{9};    % experimental
 QM = default{10};    % experimental
-w = default{11};
+Weight = default{11};
 
 for idx = 1:2:length(varargin)
     switch varargin{idx}
@@ -52,7 +52,7 @@ for idx = 1:2:length(varargin)
         case 'QualityMap'
             QM = varargin{idx+1};
         case 'Weight'
-            w = varargin{idx+1};
+            Weight = varargin{idx+1};
     end
 end
 
