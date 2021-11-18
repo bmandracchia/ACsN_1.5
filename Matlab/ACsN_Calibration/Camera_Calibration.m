@@ -16,6 +16,8 @@
 % [2] James R. Janesick, Photon Transfer, SPIE (2007)
 %     https://doi.org/10.1117/3.725073 
 
+save_one_file  = 1;
+
 %% Offset and Variance
 
 % Offset and Variance calibration is performed evaluating respectively
@@ -25,6 +27,7 @@
 % This code assumes that all data stacks for Offset and Variance
 % calibration share the same initials. However this can be changed by
 % modifying the argument of dir function.
+
 [file,path] = uigetfile('*.tif*');
 if isequal(file,0)
     disp('User selected Cancel');
@@ -32,18 +35,31 @@ if isequal(file,0)
 else
     D = dir([path, file(1:4), '*.tif*']);
     L = length(D);
+    t = 0;
     for i = 1:L
         disp(['Loading ', fullfile(path,D(i).name)]);
         im = double(loadtiff(fullfile(path,D(i).name)));
-        Offset(:,:,i) = mean(im,3); %#ok<*SAGROW>
-        Variance(:,:,i) = var(im,[],3);
+        if i == 1
+            row = size(im,1);
+            col = size(im,2);
+            Offset = zeros(row,col);
+            Variance = zeros(row,col);
+        end
+        
+        for j = 1:size(im,3)
+            t = t + 1;
+            Offset = ((t-1)/t).*Offset + im(:,:,j)./t; 
+            Variance = ((t-1)/t).*Variance + ((im(:,:,j)-Offset).^2)./(t-1); 
+        end
     end
 end
 
-Offset = mean(Offset,3);
-Variance = mean(Variance,3);
-
-save('Camera_Calibration','Offset','Variance');
+if save_one_file
+    save('Camera_Calibration','Offset','Variance');
+else
+    save('Offset','Offset');
+    save('Variance','Variance');
+end
 
 %% Gain calibration
 
@@ -55,8 +71,10 @@ save('Camera_Calibration','Offset','Variance');
 % N is the number of light levels used for gain calibration
 N = 10; 
 
-G = zeros(size(Offset,1),size(Offset,2),N);
-V = zeros(size(Offset,1),size(Offset,2),N);
+%row = size(Offset,1);
+%col = size(Offset,2);
+G = zeros(row,col,N);
+V = zeros(row,col,N);
         
 for i = 1:N
     [file,path] = uigetfile('*.tif*');
@@ -66,25 +84,20 @@ for i = 1:N
     else
         D = dir([path, file(1:4), '*.tif*']);
         L = length(D);
-        
-        G_temp = zeros(size(Offset,1),size(Offset,2),L);
-        V_temp = zeros(size(Offset,1),size(Offset,2),L);
-        
+        t = 0;
         for k = 1:L
             im = double(loadtiff(fullfile(path,D(k).name)));
-            G_temp(:,:,k) = mean(im,3);
-            V_temp(:,:,k) = var(im,[],3);
+            for j = 1:size(im,3)
+                t = t + 1;
+                G(:,:,i) = ((t-1)/t).*G(:,:,i) + im(:,:,j)./t; 
+                V(:,:,i) = ((t-1)/t).*V(:,:,i) + ((im(:,:,j)-G(:,:,i)).^2)./(t-1); 
+            end
         end
-        
-        G(:,:,i) = mean(G_temp,3);
-        V(:,:,i) = mean(V_temp,3);
-        
-        clear G_temp V_temp
     end
 end
 
-row = size(G,1);
-col = size(G,2);
+%row = size(G,1);
+%col = size(G,2);
 Gain = zeros(row,col);
 
 for i = 1:row
@@ -99,4 +112,8 @@ for i = 1:row
     end
 end
 
-save('Camera_Calibration','Gain','-append');
+if save_one_file
+    save('Camera_Calibration','Gain','-append');
+else
+    save('Gain','Gain');
+end
