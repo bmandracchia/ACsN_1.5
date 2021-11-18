@@ -63,7 +63,7 @@ end
 
 %% Gain calibration
 
-% Here the code assumes that the data for gain calibration have been saved
+% Here the code assumes that the image stacks for gain calibration have been saved
 % in different folders, one for each different illumination intensity and in
 % .tiff files that begin with 'Gain'. However, this can be changed by modifying
 % the argument of the dir function.
